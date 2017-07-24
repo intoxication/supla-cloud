@@ -7,7 +7,7 @@ services:
     autoconfigure: true
     public: false
 
-  Doctrine\ORM\EntityManager: '@doctrine.orm.default_entity_manager'
+  Doctrine\ORM\EntityManagerInterface: '@doctrine.orm.default_entity_manager'
 
   SuplaBundle\EventListener\LocaleListener:
     arguments:
@@ -22,6 +22,10 @@ services:
       - { alias: channelfunction, name: form.type }
 
   SuplaApiBundle\Provider\ApiUserProvider: ~
+
+  SuplaBundle\Controller\:
+    resource: '../../src/SuplaBundle/Controller'
+    public: true
 
   SuplaBundle\Model\:
     resource: '../../src/SuplaBundle/Model'

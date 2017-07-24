@@ -26,6 +26,7 @@ use SuplaBundle\Entity\Loaction;
 use SuplaBundle\Entity\User;
 use SuplaBundle\Form\Type\ChangeLocationType;
 use SuplaBundle\Form\Type\IODeviceChannelType;
+use SuplaBundle\Model\IODeviceManager;
 use SuplaBundle\Supla\ServerCtrl;
 use SuplaBundle\Supla\SuplaConst;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,6 +36,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * @Route("/iodev")
  */
 class IODeviceController extends AbstractController {
+    /** @var IODeviceManager */
+    private $deviceManager;
+
+    public function __construct(IODeviceManager $deviceManager) {
+        $this->deviceManager = $deviceManager;
+    }
 
     private function userReconnect() {
         $user = $this->get('security.token_storage')->getToken()->getUser();
@@ -42,13 +49,11 @@ class IODeviceController extends AbstractController {
     }
 
     private function getIODeviceById($id) {
-        $iodev_man = $this->get('iodevice_manager');
-        return $iodev_man->ioDeviceById($id);
+        return $this->deviceManager->ioDeviceById($id);
     }
 
     private function getChannelById($id) {
-        $iodev_man = $this->get('iodevice_manager');
-        return $iodev_man->channelById($id);
+        return $this->deviceManager->channelById($id);
     }
 
     /**
@@ -75,8 +80,6 @@ class IODeviceController extends AbstractController {
             return $this->redirectToRoute("_iodev_list");
         }
 
-        $dev_man = $this->get('iodevice_manager');
-
         $loc = $iodev->getLocation();
 
         $loc_name = 'Id ' . $loc->getId();
@@ -99,7 +102,7 @@ class IODeviceController extends AbstractController {
             'SuplaBundle:IODevice:iodevice.html.twig',
             ['iodevice' => $iodev,
                 'location_name' => $loc_name,
-                'channels' => $dev_man->channelsToArray($dev_man->getChannels($iodev)),
+                'channels' => $this->deviceManager->channelsToArray($this->deviceManager->getChannels($iodev)),
                 'aid_enabled' => $aid_enabled,
             ]
         );
@@ -115,10 +118,9 @@ class IODeviceController extends AbstractController {
             return $this->redirectToRoute("_iodev_list");
         }
 
-        $dev_man = $this->get('iodevice_manager');
         $m = $this->get('doctrine')->getManager();
 
-        $channels = $dev_man->getChannels($iodev);
+        $channels = $this->deviceManager->getChannels($iodev);
 
         foreach ($channels as $channel) {
             switch ($channel->getType()) {
@@ -169,8 +171,6 @@ class IODeviceController extends AbstractController {
         if ($channel === null || $channel->getIoDevice()->getId() != $devid) {
             return $this->redirectToRoute("_iodev_list");
         }
-
-        $dev_man = $this->get('iodevice_manager');
 
         $form = $this->createForm(
             IODeviceChannelType::class,
@@ -248,22 +248,21 @@ class IODeviceController extends AbstractController {
 
                     break;
             }
-            
+
             if ($channel->getFunction() == SuplaConst::FNC_CONTROLLINGTHEROLLERSHUTTER
             ) {
                 if ($channel->getParam1() < 0
-                        || $channel->getParam1() > 3000 // 5 min.
+                    || $channel->getParam1() > 3000 // 5 min.
                 ) {
                     $channel->setParam1(0);
                 }
-                
+
                 if ($channel->getParam3() < 0
-                        || $channel->getParam3() > 3000 // 5 min.
-                        ) {
+                    || $channel->getParam3() > 3000 // 5 min.
+                ) {
                     $channel->setParam3(0);
                 }
             }
-
 
             if ($old_function != $channel->getFunction()) {
                 foreach ($channel->getSchedules() as $schedule) {
@@ -284,9 +283,9 @@ class IODeviceController extends AbstractController {
         return $this->render(
             'SuplaBundle:IODevice:channeledit.html.twig',
             ['channel' => $channel,
-                'channel_type' => $dev_man->channelTypeToString($channel->getType()),
+                'channel_type' => $this->deviceManager->channelTypeToString($channel->getType()),
                 'channel_function' => $channel->getFunction(),
-                'channel_function_name' => $dev_man->channelFunctionToString($channel->getFunction()),
+                'channel_function_name' => $this->deviceManager->channelFunctionToString($channel->getFunction()),
                 'form' => $form->createView(),
                 'show_sensorstate' => ($channelType == SuplaConst::TYPE_SENSORNO
                     || $channelType == SuplaConst::TYPE_SENSORNC) ? true : false,
@@ -304,7 +303,7 @@ class IODeviceController extends AbstractController {
     /**
      * @Route("/{devid}/{id}/csv", name="_iodev_channel_item_csv")
      */
-    public function channelItemGetCSV(Request $request, $devid, $id) {
+    public function channelItemGetCSV($devid, $id) {
 
         $channel = $this->getChannelById($id);
 
@@ -312,8 +311,7 @@ class IODeviceController extends AbstractController {
             return $this->redirectToRoute("_iodev_list");
         }
 
-        $iodev_man = $this->get('iodevice_manager');
-        $file = $iodev_man->channelGetCSV($channel, "measurement_" . intval($id));
+        $file = $this->deviceManager->channelGetCSV($channel, "measurement_" . intval($id));
 
         if ($file !== false) {
             return new StreamedResponse(
@@ -421,17 +419,14 @@ class IODeviceController extends AbstractController {
      * @Route("/ajax/getfuncparams/{channel_id}/{function}", name="_iodev_ajax_getfuncparams")
      */
     public function ajaxGetfuncparamsAction($channel_id, $function) {
-
-        $dev_man = $this->get('iodevice_manager');
-        $html = $dev_man->channelFunctionParamsHtmlTemplate($channel_id, $function);
-
+        $html = $this->deviceManager->channelFunctionParamsHtmlTemplate($channel_id, $function);
         return AjaxController::jsonResponse($html !== null, ['html' => $html]);
     }
 
     /**
      * @Route("/{id}/ajax/change_loc", name="_iodev_ajax_change_loc")
      */
-    public function ajaxChangeLocGetList(Request $request, $id) {
+    public function ajaxChangeLocGetList($id) {
         $html = null;
 
         $user = $this->get('security.token_storage')->getToken()->getUser();
@@ -455,5 +450,14 @@ class IODeviceController extends AbstractController {
         }
 
         return AjaxController::jsonResponse($html !== null, ['html' => $html]);
+    }
+
+    /**
+     * @Route("/{device}/channels")
+     * @Security("user == device.getUser()")
+     */
+    public function getChannels(IODevice $device) {
+        $channels = $this->deviceManager->getChannels($device);
+        return $this->jsonResponse($channels);
     }
 }
