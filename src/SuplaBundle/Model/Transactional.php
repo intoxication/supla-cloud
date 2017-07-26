@@ -8,7 +8,7 @@ trait Transactional {
     private $entityManager;
 
     /** @required */
-    public function setEntityManager(EntityManagerInterface $entityManager): void {
+    public function setEntityManager(EntityManagerInterface $entityManager) {
         $this->entityManager = $entityManager;
     }
 
