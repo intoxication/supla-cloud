@@ -27,6 +27,10 @@ services:
     resource: '../../src/SuplaBundle/Controller'
     public: true
 
+  SuplaApiBundle\Controller\:
+    resource: '../../src/SuplaApiBundle/Controller'
+    public: true
+
   SuplaBundle\Model\:
     resource: '../../src/SuplaBundle/Model'
 
