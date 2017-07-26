@@ -42,8 +42,8 @@ class ApiChannelControllerIntegrationTest extends IntegrationTestCase {
     public function testChangingChannelState(int $deviceId, string $action, string $expectedCommand, array $additionalRequest = []) {
         $client = $this->createAuthenticatedClient($this->user);
         $client->enableProfiler();
-        $client->request('PATCH', '/api/channels/' . $deviceId, [], [], [],
-            json_encode(array_merge(['action' => $action], $additionalRequest)));
+        $request = array_merge(['action' => $action], $additionalRequest);
+        $client->request('PATCH', '/api/channels/' . $deviceId, [], [], [], json_encode($request));
         $response = $client->getResponse();
         $this->assertEquals(200, $response->getStatusCode());
         $commands = $this->getSuplaServerCommands($client);
