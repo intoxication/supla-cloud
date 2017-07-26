@@ -22,7 +22,6 @@ namespace SuplaBundle\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use SuplaBundle\Entity\IODevice;
-use SuplaBundle\Entity\Loaction;
 use SuplaBundle\Entity\User;
 use SuplaBundle\Form\Type\ChangeLocationType;
 use SuplaBundle\Form\Type\IODeviceChannelType;
