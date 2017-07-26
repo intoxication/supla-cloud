@@ -84,7 +84,7 @@ class IODevice {
      * @ORM\Column(name="enabled", type="boolean", nullable=false)
      * @Groups({"basic", "flat"})
      */
-    private $enabled;
+    private $enabled = true;
 
     /**
      * @ORM\Column(name="comment", type="string", length=200, nullable=true)
@@ -124,9 +124,6 @@ class IODevice {
      * @ORM\Column(name="protocol_version", type="integer", nullable=false)
      */
     private $protocolVersion;
-
-    public function __construct() {
-    }
 
     public function getEnabled() {
         return $this->enabled;
