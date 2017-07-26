@@ -17,6 +17,8 @@
 
 namespace SuplaApiBundle\Controller;
 
+use Assert\Assertion;
+use Assert\InvalidArgumentException;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use SuplaBundle\Entity\IODeviceChannel;
 use SuplaBundle\Model\IODeviceManager;
@@ -402,7 +404,7 @@ class ApiChannelController extends RestController {
                 break;
         }
 
-        throw new HttpException(Response::HTTP_METHOD_NOT_ALLOWED);
+        Assertion::false(true, 'Invalid action.');
     }
 
     /**
