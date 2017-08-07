@@ -18,9 +18,11 @@
 namespace SuplaApiBundle\Controller;
 
 use Assert\Assertion;
-use Assert\InvalidArgumentException;
 use FOS\RestBundle\Controller\Annotations as Rest;
+use Stringy\Stringy;
 use SuplaBundle\Entity\IODeviceChannel;
+use SuplaBundle\Enums\ChannelFunction;
+use SuplaBundle\Enums\ChannelFunctionAction;
 use SuplaBundle\Model\IODeviceManager;
 use SuplaBundle\Supla\SuplaConst;
 use SuplaBundle\Supla\SuplaServerAware;
@@ -73,9 +75,9 @@ class ApiChannelController extends RestController {
 
         if ($authorize === true) {
             if (true !== $this->suplaServer->oauthAuthorize(
-                $userid,
-                $this->container->get('security.token_storage')->getToken()->getToken()
-            )
+                    $userid,
+                    $this->container->get('security.token_storage')->getToken()->getToken()
+                )
             ) {
                 throw new HttpException(Response::HTTP_UNAUTHORIZED);
             }
@@ -367,44 +369,10 @@ class ApiChannelController extends RestController {
     }
 
     private function checkPatchAllowed($action, $func) {
-
-        switch ($action) {
-            case 'turn-on':
-            case 'turn-off':
-                switch ($func) {
-                    case SuplaConst::FNC_POWERSWITCH:
-                    case SuplaConst::FNC_LIGHTSWITCH:
-                        return true;
-                }
-                break;
-
-            case 'open':
-                switch ($func) {
-                    case SuplaConst::FNC_CONTROLLINGTHEGATEWAYLOCK:
-                    case SuplaConst::FNC_CONTROLLINGTHEDOORLOCK:
-                        return true;
-                }
-                break;
-
-            case 'open-close':
-                switch ($func) {
-                    case SuplaConst::FNC_CONTROLLINGTHEGATE:
-                    case SuplaConst::FNC_CONTROLLINGTHEGARAGEDOOR:
-                        return true;
-                }
-                break;
-
-            case 'shut':
-            case 'reveal':
-            case 'stop':
-                if ($func == SuplaConst::FNC_CONTROLLINGTHEROLLERSHUTTER) {
-                    return true;
-                }
-
-                break;
-        }
-
-        Assertion::false(true, 'Invalid action.');
+        $action = (string)Stringy::create($action)->underscored()->toUpperCase();
+        Assertion::true(ChannelFunctionAction::isValidKey($action), 'Invalid action: ' . $action);
+        $function = new ChannelFunction($func);
+        Assertion::true($function->canExecuteAction(ChannelFunctionAction::$action()), 'Can not execute this action on given channel.');
     }
 
     /**
